@@ -1,11 +1,23 @@
 const express = require("express");
-const axios = require("axios")
+const axios = require("axios");
+const dotenv = require("dotenv");
+const cors = require("cors");
+const rateLimit = require("express-rate-limit");
 
-const app = express()
+dotenv.config();
 
-const port = 3000
+const app = express();
 
-app.get('/', (_, res) => {
+const port = process.env.PORT || 3000;
+
+const limit = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 20,
+});
+app.use(limit);
+app.use(cors());
+
+app.get("/", (_, res) => {
   res.send("Open FDA node handler");
 });
 
@@ -16,39 +28,72 @@ const fdaApi = axios.create({
 
 app.get("/api/fda-proxy/adverse-events", async (req, res) => {
   const { drugName } = req.query;
-  if (!drugName) { 
-    res.status(400).json({ error: "drug name required" })
-    return
+  if (!drugName) {
+    res.status(400).json({ error: "drug name required" });
+    return;
   }
-  const fdaUrl = `https://api.fda.gov/drug/event.json?search=patient.drug.medicinalproduct:"${
-    
-    encodeURIComponent(
-    drugName)
-  }"&limit=10`;
+  const limit = req.query.limit || 10;
+  const skip = req.query.skip || 0;
+
+  const fdaUrl = `https://api.fda.gov/drug/event.json?search=patient.drug.medicinalproduct:"${encodeURIComponent(
+    drugName
+  )}"&limit=${limit}&skip=${skip}`;
 
   try {
     const response = await fdaApi.get(fdaUrl);
     res.json(response.data);
   } catch (error) {
-    console.error("FDA API request failed:", error);
-    res.status(500).json({ error: "Failed to fetch data from FDA API" });
+    console.error(
+      "FDA API request failed:",
+      error.response?.status,
+      error.response?.data || error.message
+    );
+    const status = error.response?.status || 500;
+    res.status(status).json({ error: "Failed to fetch data..." });
   }
 });
 
 app.get("/api/fda-proxy/drug-labels", async (req, res) => {
   const { drugName } = req.query;
+  if (!drugName) {
+    res.status(400).json({ error: "Drug name required" });
+    return;
+  }
+
   const fdaUrl = `https://api.fda.gov/drug/label.json?search=openfda.brand_name:"${encodeURIComponent(
     drugName
   )}"`;
 
   try {
-    const response = await axios.get(fdaUrl);
+    const response = await fdaApi.get(fdaUrl);
     res.json(response.data);
   } catch (error) {
-    console.error("FDA API request failed:", error);
-    res.status(500).json({ error: "Failed to fetch data from FDA API" });
+    console.error(
+      "FDA API request failed:",
+      error.response?.status,
+      error.response?.data || error.message
+    );
+    const status = error.response?.status || 500;
+    res.status(status).json({ error: "Failed to fetch data..." });
   }
 });
 
+app.get("/api/drugbank/interactions", async (req, res) => {
+  res.status(501).json({
+    error:
+      "DrugBank interaction API not yet implemented. Awaiting API key approval.",
+    status: "stub",
+  });
+});
 
-app.listen(port, ()=>{console.log(`Starting server at ${port}`)})
+app.get("/api/drugbank/drug-info", async (req, res) => {
+  res.status(501).json({
+    error:
+      "DrugBank information API not yet implemented. Awaiting API key approval",
+    status: "stub",
+  });
+});
+
+app.listen(port, () => {
+  console.log(`Starting server at ${port}`);
+});
