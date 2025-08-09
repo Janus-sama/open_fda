@@ -97,3 +97,5 @@ app.get("/api/drugbank/drug-info", async (req, res) => {
 app.listen(port, () => {
   console.log(`Starting server at ${port}`);
 });
+
+module.exports = app;
