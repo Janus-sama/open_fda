@@ -92,4 +92,4 @@ app.get("/api/drugbank/drug-info", async (req, res) => {
   });
 });
 
-module.exports = app;
+module.exports = { app, fdaApi };

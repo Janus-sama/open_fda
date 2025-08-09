@@ -1,6 +1,7 @@
 const request = require("supertest");
-const app = require("../server");
+const { app, fdaApi } = require("../server");
 const axios = require("axios");
+const { expect } = require("chai");
 
 jest.mock("axios");
 
@@ -42,5 +43,14 @@ describe("FDA Proxy API", () => {
       expect(res.status).toBe(500);
       expect(res.body.error).toBe("Failed to fetch data...");
     });
+  });
+});
+
+describe("fdaApi Instance Configuration", () => {
+  it("should be a properly created axios instance", () => {
+    expect(typeof fdaApi).toBe("AxiosInstance");
+    expect(typeof fdaApi.get).toBe("function");
+    expect(typeof fdaApi.post).toBe("function");
+    expect(typeof fdaApi.request).toBe("function");
   });
 });
